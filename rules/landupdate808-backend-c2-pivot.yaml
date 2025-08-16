@@ -22,7 +22,7 @@ pivots:
     - P0401.007:
       value: 200
     - P0203:
-      value: 399629
+      value: "399629"
   ads_panel_hash-01:
     - P0401.004:
       value: "314217a41cc73d73a4022b439572f5c45f0cedd2ac9fc94a79b1ce0d37d5a43c"
