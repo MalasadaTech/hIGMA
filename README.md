@@ -33,16 +33,16 @@ Metadata provides context, attribution, and operational details for hIGMA pivot 
 
 ## Pivot Section Format
 
-The pivot section defines DTF-codified pivot logic, structured in YAML for consistency and automation. It uses a `pivots` key to group pivot definitions by DTF pivot ID, with `-##` suffixes for multiple instances, and a `condition` key for logical combinations, inspired by SIGMA’s `detection` field.
+The pivot section defines DTF-codified pivot logic, structured in YAML for consistency and automation. It uses a `pivots` key to group pivots, with `-##` suffixes for multiple instances, and a `condition` key for logical combinations, inspired by SIGMA’s `detection` field.
 
 ### Format
 ```yaml
 pivots:
-  <DTF_pivot_id>[-##]:
-    - type: <pivot_type>
+  <grouping>[-##]:
+    - id: <pivot_id>
       value: <pivot_value>
       implementation: <optional_instructions>
-    - type: <pivot_type>
+    - id: <pivot_id>
       value: <pivot_value>
       implementation: <optional_instructions>
 condition: <logical_expression>
@@ -57,7 +57,7 @@ id: 4e5f6a7b-3c2d-4e8f-9a0b-1c2d3e4f5a6b
 author: MalasadaTech
 date: 2025-08-15
 threat_actor: LandUpdate808
-description: Identifies LandUpdate808 backend C2 domains, or "Injected Link Providers", that provide the injected link to load the LandUpdate808 exploit kit. These normally return a B64-encoded string that is the injected URL.
+description: Identifies LandUpdate808 backend C2 domains, or "Injected Link Providers", that provide the injected link to load the LandUpdate808 exploit kit. These normally return a B64-encoded string that is the injected URL. This search will return the scan jobs that scanned the ads.php route, got a 200 response, and is hosted on AS399629.
 dtf_version: 1.0
 references:
   - https://malasada.tech/landupdate808-backend-c2-analysis/
@@ -70,14 +70,20 @@ falsepositives:
   - Malicious ads.php resources that can't be confirmed to serve a B64 encoded string.
 status: experimental
 pivots:
-  P0401.006:
-    - type: "HTTP: Same Resource Name"
+  ads_panel:
+    - P0401.006:
       value: "ads.php"
-  P0401.007:
-    - type: "HTTP: Response Code"
+    - P0401.007:
       value: 200
-  P0203:
-    - type: AS
+    - P0203:
       value: 399629
-condition: all of them
+  ads_hash-01:
+    - P0401.004:
+      value: "314217a41cc73d73a4022b439572f5c45f0cedd2ac9fc94a79b1ce0d37d5a43c"
+      implementation: SHA256
+  ads_hash-02:
+    - P0401.004:
+      value: "3:qVZxQXbZ6iWtBqTRlvN3LBAdhH7vZVjexRoAqRAdTwIAqo76GRoAqWQoMhFIeAqM:qzxO96PKvp2dhHiXdq3v7rdqWQoMTpAN"
+      implementation: SSDEEP  
+condition: ads_panel or 1 OF ads_hash-*
 ```
