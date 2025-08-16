@@ -1,0 +1,74 @@
+# URLScan Plugin - Supported Pivots Configuration
+# This file defines the pivots supported by the URLScan integration plugin
+# 
+# App Workflow:
+# 1. Verify access to the configuration.yaml file that stores the currently supported pivots
+# 2. Check the CLI arguments to check:
+#    a. Check for debug option
+#    b. Check for YAML file location/name
+# 3. Check YAML file for the pivots and conditions section:
+#    a. Verify format is good
+#    b. Verify the pivots are supported-per condition
+# 4. Process the conditions and generate the output
+
+metadata:
+  plugin_name: "urlscan"
+  version: "1.0"
+  description: "URLScan.io integration for hIGMA pivot framework"
+  author: "MalasadaTech"
+  date: "2025-08-16"
+
+supported-pivots:
+  - id: "P0203"
+    name: "Network: ASN"
+    description: "Analysts pivot from a known malicious site to identify additional adversary infrastructure by finding other sites hosted within the same Autonomous System Number (ASN)."
+    input_type: "string"
+    reference: "https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/pivots/P0203.md"
+    conditions:
+      - "value must be a valid ASN number"
+      - "value type must match input_type"
+    
+  - id: "P0401.004"
+    name: "HTTP: Same Resources"
+    description: "Analysts pivot from a known malicious domain to identify additional adversary infrastructure by finding domains that use the exact same resource (e.g., an identical image, script, or file), but hosted at different sources, indicating potential reuse of malicious assets across distinct infrastructure."
+    input_type: "string"
+    reference: "https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/pivots/P0401.004.md"
+    conditions:
+      - "implementation field MUST specify hash type"
+      - "supported hash types for urlscan: SHA256"
+      - "hash value must match specified implementation format"
+    
+  - id: "P0401.006"
+    name: "HTTP: Same Resource Name"
+    description: "Analysts pivot from a known malicious site to identify additional adversary infrastructure by finding other sites that use the resources with the same name (e.g., a phishing kit that uses the same miss-spelled word like \"refrence.html\")."
+    input_type: "string"
+    reference: "https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/pivots/P0401.006.md"
+    conditions:
+      - "value type must match input_type"
+    
+  - id: "P0401.007"
+    name: "HTTP: Response Code"
+    description: "Analysts pivot from a known malicious site to identify additional adversary infrastructure by finding other sites; analysts refine their query by specifying the HTTP response code. As of 16AUG25, only one number is valid. In the future, we will implement common operators such as greater than or less than."
+    input_type: "number"
+    reference: "https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/pivots/P0401.007.md"
+    conditions:
+      - "value type must match input_type"
+    input_type: "string"
+    reference: "https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/pivots/P0203.md"
+    conditions:
+      - "value must be a valid ASN number"
+      - "value type must match input_type"
+
+configuration:
+  api:
+    endpoint: "https://urlscan.io/api/v1/"
+    rate_limit: 100  # requests per minute
+    timeout: 30      # seconds
+  
+  validation:
+    strict_mode: true
+    verify_ssl: true
+  
+  output:
+    format: "json"
+    include_metadata: true
