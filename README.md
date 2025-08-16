@@ -87,3 +87,42 @@ pivots:
       implementation: SSDEEP  
 condition: ads_php or 1 of ads_panel_hash-*
 ```
+
+## Plugin Integrations
+
+### URLScan.io Integration
+
+The URLScan.io plugin (`plugins/urlscan/`) converts hIGMA rules into URLScan.io search queries. It provides:
+
+- **Query Generation**: Converts DTF pivots into URLScan.io syntax
+- **Validation**: Validates pivots against supported types and configurations
+- **Comprehensive Output**: Structured YAML with metadata, queries, and validation results
+
+#### Supported Pivots
+- **P0203**: Network ASN → `page.asn:AS{value}`
+- **P0401.004**: File Hash → `hash:{value}` (SHA256 only)
+- **P0401.006**: Resource Name → `task.url:"{value}"`
+- **P0401.007**: HTTP Status → `page.status:{value}`
+
+#### Example Output
+```yaml
+metadata:
+  rules_title: LandUpdate808 Backend C2 Pivot
+  threat_actor: LandUpdate808
+  total_queries: 2
+  failed_queries: 1
+
+queries:
+- query_id: ads_php
+  query: task.url:"ads.php" AND page.status:200 AND page.asn:AS399629
+  query_type: combined
+  pivot_ids: [P0401.006, P0401.007, P0203]
+```
+
+#### Usage
+```bash
+cd plugins/urlscan
+python urlscan-integration.py ../../rules/landupdate808-backend-c2-pivot.yaml
+```
+
+See [plugins/urlscan/README.md](plugins/urlscan/README.md) for detailed documentation.

@@ -361,8 +361,16 @@ class URLScanQueryBuilder:
                         self.logger.error(f"Error creating failed query entry: {e}")
                         raise
         
-        # Remove duplicates from pivot_ids_used
+        # Remove duplicates from pivot_ids_used and sort numerically
         pivot_ids_used = list(set(pivot_ids_used))
+        # Sort pivot IDs numerically by extracting the numeric parts
+        def pivot_sort_key(pivot_id):
+            # Extract numbers from pivot ID (e.g., "P0401.004" -> [401, 4])
+            import re
+            numbers = re.findall(r'\d+', pivot_id)
+            return [int(num) for num in numbers]
+        
+        pivot_ids_used.sort(key=pivot_sort_key)
         
         # Compile statistics
         total_queries = len(queries)
@@ -375,6 +383,7 @@ class URLScanQueryBuilder:
                 'rules_author': rules.get('author'),
                 'rules_date': rules.get('date'),
                 'threat_actor': rules.get('threat_actor'),
+                'references': rules.get('references'),
                 'plugin': self.config['metadata']['plugin_name'],
                 'plugin_version': self.config['metadata']['version'],
                 'generation_timestamp': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),

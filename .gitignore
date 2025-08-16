@@ -13,6 +13,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Plugin output directories
+plugins/*/output/
+
 # IDE
 .vscode/
 .idea/
