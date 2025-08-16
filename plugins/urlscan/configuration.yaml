@@ -49,14 +49,9 @@ supported-pivots:
   - id: "P0401.007"
     name: "HTTP: Response Code"
     description: "Analysts pivot from a known malicious site to identify additional adversary infrastructure by finding other sites; analysts refine their query by specifying the HTTP response code. As of 16AUG25, only one number is valid. In the future, we will implement common operators such as greater than or less than."
-    input_type: "number"
+    input_type: "integer"
     reference: "https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/pivots/P0401.007.md"
     conditions:
-      - "value type must match input_type"
-    input_type: "string"
-    reference: "https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/pivots/P0203.md"
-    conditions:
-      - "value must be a valid ASN number"
       - "value type must match input_type"
 
 configuration:
