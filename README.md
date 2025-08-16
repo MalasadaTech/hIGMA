@@ -6,6 +6,28 @@
 # hIGMA
 A sigma inspired data sharing concept (hunter's SIGMA). Share pivots just like SIGMA except it specific to pivots and uses DTF. The outputs can feed into masq-monitor, or thrintel sharing. hIGMA is for thruntellisearch analysts what SIGMA is for detection engineers.
 
+## Setup
+
+### Environment Variables
+
+This project requires API keys for various integrations. To set up your environment:
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit the `.env` file and add your actual API keys:
+   ```bash
+   # Example values - replace with your actual API keys
+   URLSCAN_API_KEY=your_urlscan_api_key_here
+   # Add other API keys as needed
+   ```
+
+3. **Important**: Never commit your `.env` file to version control. It contains sensitive API keys and is already included in `.gitignore`.
+
+4. The `.env.example` file shows the required environment variables without exposing actual keys. Keep this file updated when adding new environment variables.
+
 # [DTF integration](https://github.com/MalasadaTech/defenders-threatmesh-framework)
 
 See [EX0017: LandUpdate808 Backend C2 Analysis](https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/examples/EX0017.md#higma) for the first example of how hIGMA integrates with DTF.
