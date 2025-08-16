@@ -6,6 +6,10 @@
 # hIGMA
 A sigma inspired data sharing concept (hunter's SIGMA). Share pivots just like SIGMA except it specific to pivots and uses DTF. The outputs can feed into masq-monitor, or thrintel sharing.
 
+# [DTF integration](https://github.com/MalasadaTech/defenders-threatmesh-framework)
+
+See [EX0017: LandUpdate808 Backend C2 Analysis](/examples/EX0017.md) for the first example of how hIGMA integrates with DTF.
+
 ## hIGMA Specification
 
 hIGMA is a SIGMA-inspired framework for documenting DTF-based pivots for threat hunting, structured in YAML for consistency and automation. It defines pivot logic and metadata to enable sharing and integration with tools like masq-monitor and Threporter within the bot-o orchestrator. This specification outlines the metadata fields and pivot section format.
