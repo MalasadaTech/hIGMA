@@ -8,7 +8,7 @@ A sigma inspired data sharing concept (hunter's SIGMA). Share pivots just like S
 
 # [DTF integration](https://github.com/MalasadaTech/defenders-threatmesh-framework)
 
-See [EX0017: LandUpdate808 Backend C2 Analysis](https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/examples/EX0017.md) for the first example of how hIGMA integrates with DTF.
+See [EX0017: LandUpdate808 Backend C2 Analysis](https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/examples/EX0017.md#higma) for the first example of how hIGMA integrates with DTF.
 
 ## hIGMA Specification
 
