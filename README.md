@@ -70,20 +70,20 @@ falsepositives:
   - Malicious ads.php resources that can't be confirmed to serve a B64 encoded string.
 status: experimental
 pivots:
-  ads_panel:
+  ads_php:
     - P0401.006:
       value: "ads.php"
     - P0401.007:
       value: 200
     - P0203:
       value: 399629
-  ads_hash-01:
+  ads_panel_hash-01:
     - P0401.004:
       value: "314217a41cc73d73a4022b439572f5c45f0cedd2ac9fc94a79b1ce0d37d5a43c"
       implementation: SHA256
-  ads_hash-02:
+  ads_panel_hash-02:
     - P0401.004:
       value: "3:qVZxQXbZ6iWtBqTRlvN3LBAdhH7vZVjexRoAqRAdTwIAqo76GRoAqWQoMhFIeAqM:qzxO96PKvp2dhHiXdq3v7rdqWQoMTpAN"
       implementation: SSDEEP  
-condition: ads_panel or 1 OF ads_hash-*
+condition: ads_php or 1 OF ads_panel_hash-*
 ```
