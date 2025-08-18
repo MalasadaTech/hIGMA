@@ -35,6 +35,7 @@ Version: 1.0
 
 Supported Pivots:
 - P0203: Network ASN pivots
+- P0401.001: HTTP page title analysis
 - P0401.004: HTTP same resources (hash-based)
 - P0401.006: HTTP same resource name
 - P0401.007: HTTP response code analysis
@@ -133,6 +134,18 @@ class URLScanQueryBuilder:
         """
         return f"page.status:{response_code}"
     
+    def build_title_query(self, title: str) -> str:
+        """
+        Build URLScan query for page title pivot (P0401.001).
+        
+        Args:
+            title (str): Page title to search for
+            
+        Returns:
+            str: URLScan query string
+        """
+        return f'page.title:"{title}"'
+    
     def build_pivot_query(self, pivot_id: str, pivot_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Build a query for a single pivot.
@@ -169,6 +182,9 @@ class URLScanQueryBuilder:
             if pivot_id == "P0203":
                 query = self.build_asn_query(str(pivot_data['value']))
                 query_type = "asn"
+            elif pivot_id == "P0401.001":
+                query = self.build_title_query(str(pivot_data['value']))
+                query_type = "title"
             elif pivot_id == "P0401.004":
                 hash_type = pivot_data.get('implementation', 'SHA256')
                 query = self.build_hash_query(str(pivot_data['value']), hash_type)
@@ -211,6 +227,7 @@ class URLScanQueryBuilder:
         """Get the query type for a pivot ID."""
         query_type_map = {
             "P0203": "asn",
+            "P0401.001": "title",
             "P0401.004": "hash", 
             "P0401.006": "url",
             "P0401.007": "status"
@@ -227,6 +244,8 @@ class URLScanQueryBuilder:
                 return f"Hash type {hash_type} not supported by URLScan"
         elif pivot_id == "P0203":
             return "ASN mapped to URLScan page.asn field"
+        elif pivot_id == "P0401.001":
+            return "Page title mapped to URLScan page.title field"
         elif pivot_id == "P0401.006":
             return "Resource name mapped to URLScan task.url field"
         elif pivot_id == "P0401.007":

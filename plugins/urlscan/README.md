@@ -14,6 +14,7 @@ This integration converts hIGMA YAML rule files into URLScan.io search queries. 
 | Pivot ID | URLScan Mapping | Input Type | Supported Hash Types |
 |----------|-----------------|------------|---------------------|
 | P0203 | `page.asn:AS{value}` | string (ASN number) | N/A |
+| P0401.001 | `page.title:"{value}"` | string (page title) | N/A |
 | P0401.004 | `hash:{value}` | string (hash) | SHA256 only |
 | P0401.006 | `task.url:"{value}"` | string (URL/resource) | N/A |
 | P0401.007 | `page.status:{value}` | number (HTTP status) | N/A |
