@@ -100,6 +100,7 @@ The URLScan.io plugin (`plugins/urlscan/`) converts hIGMA rules into URLScan.io 
 
 #### Supported Pivots
 - **P0203**: Network ASN → `page.asn:AS{value}`
+- **P0401.001**: Page Title → `page.title:"{value}"`
 - **P0401.004**: File Hash → `hash:{value}` (SHA256 only)
 - **P0401.006**: Resource Name → `task.url:"{value}"`
 - **P0401.007**: HTTP Status → `page.status:{value}`

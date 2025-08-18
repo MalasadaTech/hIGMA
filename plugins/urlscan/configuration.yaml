@@ -27,7 +27,15 @@ supported-pivots:
     conditions:
       - "value must be a valid ASN number"
       - "value type must match input_type"
-    
+
+  - id: "P0401.001"
+    name: "HTTP: Title"
+    description: "Analysts pivot from a known malicious artifact to identify additional adversary infrastructure by finding artifacts that share the same page title, indicating a common structural attribute often used in phishing or malware campaigns."
+    input_type: "string"
+    reference: "https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/pivots/P0401.001.md"
+    conditions:
+      - "value type must match input_type"    
+
   - id: "P0401.004"
     name: "HTTP: Same Resources"
     description: "Analysts pivot from a known malicious domain to identify additional adversary infrastructure by finding domains that use the exact same resource (e.g., an identical image, script, or file), but hosted at different sources, indicating potential reuse of malicious assets across distinct infrastructure."
