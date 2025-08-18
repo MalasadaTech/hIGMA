@@ -1,0 +1,25 @@
+title: Lumma Stealer SectopRAT Delivery Page Title Pivot
+id: 7f8a9b0c-5d6e-4f7a-8b9c-0d1e2f3a4b5c
+author: MalasadaTech
+date: 2025-08-17
+threat_actor: SectopRAT
+description: Identifies Lumma Stealer delivery infrastructure through page title analysis. This rule detects domains serving content with the page title "Secure Download File" which has been observed in SectopRAT campaigns delivering Lumma Stealer malware. The pivot leverages HTTP page title characteristics to identify additional adversary infrastructure sharing common structural attributes.
+dtf_version: 1.0
+references:
+  - https://x.com/ChickenWhisker/status/1956849909761778082
+  - https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/pivots/P0401.001.md
+tags:
+  - stealer
+  - delivery
+  - title
+  - infrastructure
+confidence: medium
+falsepositives:
+  - Legitimate file download services that may use similar page titles
+  - Unrelated websites with generic "Secure Download File" titles
+status: experimental
+pivots:
+  secure_download_title:
+    - P0401.001:
+      value: "Secure Download File"
+condition: secure_download_title
