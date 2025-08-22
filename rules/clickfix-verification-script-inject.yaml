@@ -1,0 +1,26 @@
+title: Unique ClickFix Web Inject with Verification Script
+id: 2878ec8f-86df-403e-b3eb-09061e098be3
+author: Grok
+date: 2025-08-21
+threat_actor: Lumma
+description: Identifies domains associated with ClickFix campaigns, pivoting on shared IP address or page title "Verification Gateway".
+dtf_version: 1.0
+references:
+  - https://x.com/ChickenWhisker/status/1958144734121353631
+tags:
+  - clickfix
+  - lumma
+  - stealer
+confidence: medium
+falsepositives:
+  - Legitimate sites hosted on the same IP address.
+  - Sites with similar verification-related page titles.
+status: experimental
+pivots:
+  verification_ip:
+    - P0201:
+      value: "185.117.91.141"
+  verification_title:
+    - P0401.001:
+      value: "Verification Gateway"
+condition: verification_ip or verification_title

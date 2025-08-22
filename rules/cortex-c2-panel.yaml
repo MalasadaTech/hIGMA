@@ -1,0 +1,30 @@
+title: Cortex C2 Promotion Pivot
+id: 2ccba286-cd76-4f07-8209-c4f89655bdeb
+author: MalasadaTech
+date: 2025-08-21
+threat_actor: CortexC2
+description: Identifies Cortex C2 panels, a multi-layer C2 tool with DDoS capabilities including L4 (UDP/TCP/DNS floods), L7 (HTTPS/TLS, CF bypass), and game server attacks. Pivots on page title and hashes of associated resources (script.js and an image).
+dtf_version: 1.0
+references:
+  - https://x.com/Fact_Finder03/status/1954403465339273596
+tags:
+  - C2
+  - DDoS
+  - infrastructure
+confidence: medium
+falsepositives:
+  - Legitimate websites with similar titles or shared resources.
+status: experimental
+pivots:
+  cortex_title:
+    - P0401.001:
+      value: "Cortex C2"
+  resource_hash-01:
+    - P0401.004:
+      value: "eb314b0b64f13b78efb2d554e63c97919c9c1a6b47ca3135f554251278de8365"
+      implementation: SHA256
+  resource_hash-02:
+    - P0401.004:
+      value: "77f9a812276f3d2796b53631c0fde94d3c66212f5eaa55bea0c972a0387dc1ea"
+      implementation: SHA256
+condition: cortex_title or 1 of resource_hash-*

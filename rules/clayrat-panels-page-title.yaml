@@ -1,0 +1,22 @@
+title: Clayrat Panel Pivot via Page Title
+id: 3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f
+author: MalasadaTech
+date: 2025-08-21
+threat_actor: UNK
+description: Identifies Clayrat Panels by pivoting on the page title. This pivot uses the title " Вход в систему - clayrat " to find similar infrastructure.
+dtf_version: 1.0
+references:
+  - https://x.com/skocherhan/status/1951726467613897112
+tags:
+  - stealer
+  - panel
+  - clayrat
+confidence: medium
+falsepositives:
+  - Legitimate sites with similar page titles.
+status: experimental
+pivots:
+  page_title:
+    - P0401.001:
+      value: " Вход в систему - clayrat "
+condition: page_title

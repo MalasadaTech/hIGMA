@@ -1,0 +1,22 @@
+title: Lumma Stealer C2 Pivot via IP Reverse Lookup
+id: 9a0b1c2d-3e4f-5a6b-7c8d-9e0f1a2b3c4d
+author: MalasadaTech
+date: 2025-08-21
+threat_actor: Lumma
+description: Identifies Lumma Stealer C2 infrastructure by pivoting on the IP address via reverse lookup. This pivot uses the IP 144.172.100.103 to find associated domains.
+dtf_version: 1.0
+references:
+  - https://x.com/ChickenWhisker/status/1958122240635257082
+tags:
+  - stealer
+  - lumma
+  - C2
+confidence: medium
+falsepositives:
+  - Legitimate sites hosted on the same IP.
+status: experimental
+pivots:
+  ip_reverse:
+    - P0201:
+      value: "144.172.100.103"
+condition: ip_reverse

@@ -1,0 +1,24 @@
+title: Odyssey Stealer Panel Pivot via CSS File
+id: 2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e
+author: MalasadaTech
+date: 2025-08-21
+threat_actor: UNK
+description: Identifies Odyssey Stealer Panels by pivoting on a CSS file. This pivot uses the SHA256 hash of the CSS file to find similar infrastructure.
+dtf_version: 1.0
+references:
+  - https://x.com/solostalking/status/1930977703265554806
+tags:
+  - stealer
+  - panel
+  - odyssey
+  - macos
+confidence: medium
+falsepositives:
+  - Legitimate sites using the same CSS file.
+status: experimental
+pivots:
+  css_file:
+    - P0401.004:
+      value: "ab77cc4e64e6830f333071b3bd0cff2fe583f15b3549ecc00428c14ec4094778"
+      implementation: SHA256
+condition: css_file
