@@ -1,0 +1,24 @@
+title: ClickFix macOS Pivot via Image
+id: 1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+author: MalasadaTech
+date: 2025-08-21
+threat_actor: ClickFix
+description: Identifies ClickFix campaign sites targeting macOS by pivoting on an image. This pivot uses the SHA256 hash of the image to find similar infrastructure.
+dtf_version: 1.0
+references:
+  - https://x.com/solostalking/status/1957706264932200643
+tags:
+  - phishing
+  - clickfix
+  - macos
+  - stealer
+confidence: medium
+falsepositives:
+  - Legitimate sites using the same image.
+status: experimental
+pivots:
+  clickfix_image:
+    - P0401.004:
+      value: "0fd46cea12675f3e52553cd44a0887000666bae488e5639250779969707ded55"
+      implementation: SHA256
+condition: clickfix_image

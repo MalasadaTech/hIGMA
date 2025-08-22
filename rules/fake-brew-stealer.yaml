@@ -1,0 +1,24 @@
+title: Fake Brew Pivot via Copied Image
+id: f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c
+author: MalasadaTech
+date: 2025-08-21
+threat_actor: UNK
+description: Identifies sites that masquerade as the legit macOS app "brew" by pivoting on a copied image. This pivot uses the SHA256 hash of the image to find similar infrastructure.
+dtf_version: 1.0
+references:
+  - https://x.com/500mk500/status/1947647460383273144
+tags:
+  - stealer
+  - osx
+  - brew
+  - masquerade
+confidence: medium
+falsepositives:
+  - Legitimate sites using the same image, such as the official brew.sh.
+status: experimental
+pivots:
+  copied_image:
+    - P0401.004:
+      value: "e3a920b69a5721134d0c2f5d05ab30a93eba87b085cc3fe816271b2dc75cb1aa"
+      implementation: SHA256
+condition: copied_image
