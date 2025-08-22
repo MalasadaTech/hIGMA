@@ -34,6 +34,7 @@ Dat    # Initialize query builder and process rules
 Version: 1.0
 
 Supported Pivots:
+- P0201: Reverse lookup (IP address)
 - P0203: Network ASN pivots
 - P0401.001: HTTP page title analysis
 - P0401.004: HTTP same resources (hash-based)
@@ -75,6 +76,24 @@ class URLScanQueryBuilder:
         self.logger = setup_logging(debug)
         self.supported_pivots = get_supported_pivot_ids(config)
         
+    def build_ip_query(self, ip_value: str) -> str:
+        """
+        Build URLScan query for IP reverse lookup pivot (P0201).
+        
+        Args:
+            ip_value (str): IP address
+            
+        Returns:
+            str: URLScan query string
+        """
+        # Simple validation that it looks like an IP address
+        import re
+        ip_pattern = r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$'
+        if not re.match(ip_pattern, ip_value):
+            raise PivotValidationError(f"Invalid IP address format: {ip_value}")
+
+        return ip_value
+
     def build_asn_query(self, asn_value: str) -> str:
         """
         Build URLScan query for ASN pivot (P0203).
@@ -179,7 +198,10 @@ class URLScanQueryBuilder:
         
         try:
             # Build query based on pivot type
-            if pivot_id == "P0203":
+            if pivot_id == "P0201":
+                query = self.build_ip_query(str(pivot_data['value']))
+                query_type = "ip"
+            elif pivot_id == "P0203":
                 query = self.build_asn_query(str(pivot_data['value']))
                 query_type = "asn"
             elif pivot_id == "P0401.001":
@@ -226,6 +248,7 @@ class URLScanQueryBuilder:
     def _get_query_type(self, pivot_id: str) -> str:
         """Get the query type for a pivot ID."""
         query_type_map = {
+            "P0201": "ip",
             "P0203": "asn",
             "P0401.001": "title",
             "P0401.004": "hash", 
@@ -236,7 +259,9 @@ class URLScanQueryBuilder:
     
     def _get_implementation_notes(self, pivot_id: str, pivot_data: Dict[str, Any]) -> str:
         """Get implementation notes for a pivot."""
-        if pivot_id == "P0401.004":
+        if pivot_id == "P0201":
+            return "IP address mapped to URLScan IP field for reverse lookup"
+        elif pivot_id == "P0401.004":
             hash_type = pivot_data.get('implementation', 'SHA256')
             if hash_type.upper() == 'SHA256':
                 return "SHA256 hash mapped to URLScan hash field"
@@ -432,7 +457,9 @@ class URLScanQueryBuilder:
         
         if len(pivot_ids) == 1:
             pivot_id = pivot_ids[0]
-            if pivot_id == "P0203":
+            if pivot_id == "P0201":
+                return f"Search for domains hosted on specific IP address (from {pivot_group_name})"
+            elif pivot_id == "P0203":
                 return f"Search for resources hosted on specific ASN (from {pivot_group_name})"
             elif pivot_id == "P0401.004":
                 return f"Search for specific hash/resource (from {pivot_group_name})"
@@ -531,7 +558,20 @@ def main():
     if args.format == 'json':
         output_data = json.dumps(results, indent=2, ensure_ascii=False)
     elif args.format == 'yaml':
-        output_data = yaml.dump(results, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        # Create a custom YAML dumper that quotes IP addresses
+        class IPQuotingDumper(yaml.SafeDumper):
+            def write_literal(self, text):
+                return super().write_literal(text)
+            
+            def represent_str(self, data):
+                import re
+                # If the string is an IP address, force quotes
+                if re.match(r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', data):
+                    return self.represent_scalar('tag:yaml.org,2002:str', data, style='"')
+                return super().represent_str(data)
+        
+        IPQuotingDumper.add_representer(str, IPQuotingDumper.represent_str)
+        output_data = yaml.dump(results, Dumper=IPQuotingDumper, default_flow_style=False, allow_unicode=True, sort_keys=False)
     else:  # csv or other formats - default to yaml for now
         output_data = yaml.dump(results, default_flow_style=False, allow_unicode=True, sort_keys=False)
     
