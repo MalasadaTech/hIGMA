@@ -13,11 +13,19 @@ This integration converts hIGMA YAML rule files into URLScan.io search queries. 
 ## Supported Pivots
 | Pivot ID | URLScan Mapping | Input Type | Supported Hash Types |
 |----------|-----------------|------------|---------------------|
+| P0201 | `"IP_ADDRESS"` | string (IP address) | N/A |
 | P0203 | `page.asn:AS{value}` | string (ASN number) | N/A |
 | P0401.001 | `page.title:"{value}"` | string (page title) | N/A |
 | P0401.004 | `hash:{value}` | string (hash) | SHA256 only |
 | P0401.006 | `task.url:"{value}"` | string (URL/resource) | N/A |
 | P0401.007 | `page.status:{value}` | number (HTTP status) | N/A |
+
+### Pivot Details
+
+#### P0201 - IP Address Reverse Lookup
+- **Purpose**: Find domains hosted on a specific IP address
+- **Input**: Valid IPv4 address (e.g., "185.117.91.141")
+- **Use Case**: Identify shared hosting infrastructure or C2 servers
 
 ## Output Format
 The integration outputs structured YAML files with the following sections:
@@ -32,12 +40,18 @@ metadata:
     - https://malasada.tech/landupdate808-backend-c2-analysis/
   total_queries: 2
   failed_queries: 1
-  pivot_ids: [P0203, P0401.004, P0401.006, P0401.007]
+  pivot_ids: [P0201, P0203, P0401.004, P0401.006, P0401.007]
 ```
 
 ### Queries
 ```yaml
 queries:
+- query_id: verification_ip
+  query: "185.117.91.141"
+  query_type: ip
+  pivot_ids: [P0201]
+  description: Search for domains hosted on specific IP address
+  implementation_notes: IP address mapped to URLScan IP field for reverse lookup
 - query_id: ads_php
   query: task.url:"ads.php" AND page.status:200 AND page.asn:AS399629
   query_type: combined
@@ -62,6 +76,11 @@ warnings:
 ### Basic Usage
 ```bash
 python urlscan-integration.py rules/landupdate808-backend-c2-pivot.yaml
+```
+
+### IP Address Reverse Lookup (P0201)
+```bash
+python urlscan-integration.py rules/clickfix-verification-script-inject.yaml
 ```
 
 ### With Debug Output

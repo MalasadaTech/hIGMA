@@ -19,8 +19,17 @@ metadata:
   date: "2025-08-16"
 
 supported-pivots:
+  - id: "P0201"
+    name: "Reverse lookup"
+    description: "Analysts pivot from a known malicious domain to identify additional adversary infrastructure by finding domains that share the same IP address, indicating shared hosting or infrastructure."
+    input_type: "string"
+    reference: "https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/pivots/P0201.md"
+    conditions:
+      - "value must be a valid IP address"
+      - "value type must match input_type"
+
   - id: "P0203"
-    name: "Network: ASN"
+    name: "ASN"
     description: "Analysts pivot from a known malicious site to identify additional adversary infrastructure by finding other sites hosted within the same Autonomous System Number (ASN)."
     input_type: "string"
     reference: "https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/pivots/P0203.md"
