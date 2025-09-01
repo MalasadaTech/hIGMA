@@ -1,0 +1,28 @@
+title: Chromusimus Fake Updates Pivot via Image Hashes
+id: 4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a
+author: MalasadaTech
+date: 2025-08-31
+threat_actor: UNK
+description: Identifies Chromusimus Fake Updates by pivoting on the image file hashes for chrome-logo-2023.png and chrome-logo.svg. This pivot uses the SHA256 hashes of the images to find similar infrastructure.
+dtf_version: 1.0
+references:
+  - https://x.com/HuntYethHounds/status/1962193273432273278
+tags:
+  - phishing
+  - fakeupdate
+  - chromusimus
+  - chrome
+confidence: medium
+falsepositives:
+  - Legitimate sites using the same Chrome logo images.
+status: experimental
+pivots:
+  chrome_logo_png:
+    - P0401.004:
+      value: "2bb1a2c9b9ae4d36f62ea53811554636cf3c5b74d9845e1dbacca0ce62dc7880"
+      implementation: SHA256
+  chrome_logo_svg:
+    - P0401.004:
+      value: "46c86deeb625c7616a77777ca7ee7bea12493b9611923c66405796f3dcce3185"
+      implementation: SHA256
+condition: chrome_logo_png and chrome_logo_svg
