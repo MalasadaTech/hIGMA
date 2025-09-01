@@ -46,7 +46,7 @@ import json
 import sys
 import time
 import os
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 from pathlib import Path
 from datetime import datetime
 import yaml
@@ -310,6 +310,9 @@ class URLScanQueryBuilder:
                 query_info = self.build_pivot_query(pivot_id, pivot)
                 all_pivot_queries.append(query_info)
         
+        # Check for conditions in the rules
+        condition = rules.get('condition')
+        
         # Now process pivots by groups (e.g., ads_php, ads_panel_hash-01, etc.)
         queries = []
         failed_queries = []
@@ -319,6 +322,27 @@ class URLScanQueryBuilder:
         # Group pivots by their rule names
         pivots_section = rules.get('pivots', {})
         
+        # Handle condition-based query generation
+        if condition and self._should_combine_queries(condition, pivots_section):
+            combined_query_info = self._build_condition_based_query(condition, pivots_section, all_pivot_queries, rules)
+            if combined_query_info:
+                if combined_query_info['status'] == 'success':
+                    queries.append(combined_query_info)
+                    pivot_ids_used.extend(combined_query_info['pivot_ids'])
+                else:
+                    failed_queries.append({
+                        'query_id': 'condition_based_query',
+                        'pivot_ids': combined_query_info.get('pivot_ids', []),
+                        'query_type': 'combined',
+                        'error_message': combined_query_info.get('error_message', 'Unknown error'),
+                        'implementation_notes': combined_query_info.get('implementation_notes', ''),
+                        'description': f"Failed condition-based query: {condition}"
+                    })
+            return self._build_final_results(rules, queries, failed_queries, warnings, pivot_ids_used, all_pivot_queries)
+        
+        # Original group-based processing when no combining condition is present
+        
+        # Original group-based processing when no combining condition is present
         for pivot_group_name, pivot_group in pivots_section.items():
             group_queries = []
             group_failed = []
@@ -405,6 +429,262 @@ class URLScanQueryBuilder:
                         self.logger.error(f"Error creating failed query entry: {e}")
                         raise
         
+        return self._build_final_results(rules, queries, failed_queries, warnings, pivot_ids_used, all_pivot_queries)
+    
+    def _should_combine_queries(self, condition: str, pivots_section: Dict[str, Any]) -> bool:
+        """
+        Determine if queries should be combined based on the condition.
+        
+        Args:
+            condition (str): The condition string from the rules
+            pivots_section (Dict): The pivots section from the rules
+            
+        Returns:
+            bool: True if queries should be combined
+        """
+        # Check for 'and' or 'or' conditions between named pivot groups
+        if ' and ' in condition.lower() or ' or ' in condition.lower():
+            # Check if the condition references pivot group names that exist
+            pivot_group_names = list(pivots_section.keys())
+            for group_name in pivot_group_names:
+                if group_name in condition:
+                    return True
+        return False
+    
+    def _build_condition_based_query(self, condition: str, pivots_section: Dict[str, Any], 
+                                   all_pivot_queries: List[Dict], rules: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Build a combined query based on the condition.
+        
+        Args:
+            condition (str): The condition string from the rules
+            pivots_section (Dict): The pivots section from the rules  
+            all_pivot_queries (List[Dict]): All individual pivot queries
+            rules (Dict): The full rules dictionary
+            
+        Returns:
+            Dict[str, Any]: Combined query information
+        """
+        self.logger.info(f"Building condition-based query for: {condition}")
+        
+        # Parse simple 'and' conditions (e.g., "chrome_logo_png and chrome_logo_svg")
+        if ' and ' in condition.lower():
+            return self._build_and_condition_query(condition, pivots_section, all_pivot_queries, rules)
+        
+        # Parse simple 'or' conditions (e.g., "verification_ip or verification_title")  
+        elif ' or ' in condition.lower():
+            return self._build_or_condition_query(condition, pivots_section, all_pivot_queries, rules)
+        
+        # For other conditions, fall back to original behavior for now
+        return None
+    
+    def _build_and_condition_query(self, condition: str, pivots_section: Dict[str, Any],
+                                 all_pivot_queries: List[Dict], rules: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Build a combined query for 'and' conditions.
+        
+        Args:
+            condition (str): The condition string containing 'and'
+            pivots_section (Dict): The pivots section from the rules
+            all_pivot_queries (List[Dict]): All individual pivot queries  
+            rules (Dict): The full rules dictionary
+            
+        Returns:
+            Dict[str, Any]: Combined query information
+        """
+        # Split condition by 'and' and clean up group names
+        parts = [part.strip() for part in condition.split(' and ')]
+        
+        successful_queries = []
+        failed_groups = []
+        all_pivot_ids = []
+        
+        for group_name in parts:
+            if group_name not in pivots_section:
+                self.logger.warning(f"Pivot group '{group_name}' referenced in condition not found in pivots section")
+                continue
+                
+            # Get queries for this group
+            group_queries, group_failed, group_pivot_ids = self._get_group_queries(
+                group_name, pivots_section[group_name], all_pivot_queries
+            )
+            
+            if group_queries:
+                # For hash queries, we want to combine the hash values, not the full queries
+                if all(query.startswith('hash:') for query in group_queries):
+                    # Extract hash values and combine them
+                    hash_values = [query.replace('hash:', '') for query in group_queries]
+                    if len(hash_values) == 1:
+                        successful_queries.append(hash_values[0])
+                    else:
+                        # Multiple hashes in same group - this shouldn't happen normally but handle it
+                        successful_queries.extend(hash_values)
+                else:
+                    # For non-hash queries, just add them as they are
+                    successful_queries.extend(group_queries)
+                all_pivot_ids.extend(group_pivot_ids)
+            else:
+                failed_groups.append(group_name)
+        
+        if not successful_queries:
+            return {
+                'status': 'error',
+                'error_message': f"No successful queries found for condition: {condition}",
+                'implementation_notes': f"All referenced groups failed: {', '.join(failed_groups)}"
+            }
+        
+        # Build the combined query
+        if all(any(q['pivot_id'] == 'P0401.004' for q in all_pivot_queries if q['value'] == hash_val) 
+               for hash_val in successful_queries):
+            # All queries are hash-based (P0401.004), combine them in URLScan hash syntax
+            combined_query = f"hash:({' AND '.join(successful_queries)})"
+        else:
+            # Mix of different query types, use general AND syntax
+            combined_query = ' AND '.join(successful_queries)
+        
+        self.logger.info(f"Generated combined query: {combined_query}")
+        
+        return {
+            'query_id': f"condition_{condition.replace(' and ', '_and_').replace(' ', '_')}",
+            'query': combined_query,
+            'pivot_ids': list(set(all_pivot_ids)),
+            'query_type': 'combined',
+            'status': 'success',
+            'description': f"Combined query based on condition: {condition}",
+            'implementation_notes': f"Combined query using AND logic for: {', '.join(parts)}"
+        }
+    
+    def _build_or_condition_query(self, condition: str, pivots_section: Dict[str, Any],
+                                all_pivot_queries: List[Dict], rules: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Build a combined query for 'or' conditions.
+        
+        Args:
+            condition (str): The condition string containing 'or'
+            pivots_section (Dict): The pivots section from the rules
+            all_pivot_queries (List[Dict]): All individual pivot queries  
+            rules (Dict): The full rules dictionary
+            
+        Returns:
+            Dict[str, Any]: Combined query information
+        """
+        # Split condition by 'or' and clean up group names
+        parts = [part.strip() for part in condition.split(' or ')]
+        
+        successful_queries = []
+        failed_groups = []
+        all_pivot_ids = []
+        
+        for group_name in parts:
+            if group_name not in pivots_section:
+                self.logger.warning(f"Pivot group '{group_name}' referenced in condition not found in pivots section")
+                continue
+                
+            # Get queries for this group
+            group_queries, group_failed, group_pivot_ids = self._get_group_queries(
+                group_name, pivots_section[group_name], all_pivot_queries
+            )
+            
+            if group_queries:
+                # For OR conditions, we want to keep the full query syntax for each part
+                successful_queries.extend(group_queries)
+                all_pivot_ids.extend(group_pivot_ids)
+            else:
+                failed_groups.append(group_name)
+        
+        if not successful_queries:
+            return {
+                'status': 'error',
+                'error_message': f"No successful queries found for condition: {condition}",
+                'implementation_notes': f"All referenced groups failed: {', '.join(failed_groups)}"
+            }
+        
+        # Build the combined OR query
+        # For OR conditions, we join the full queries with " OR "
+        combined_query = ' OR '.join(successful_queries)
+        
+        self.logger.info(f"Generated combined OR query: {combined_query}")
+        
+        return {
+            'query_id': f"condition_{condition.replace(' or ', '_or_').replace(' ', '_')}",
+            'query': combined_query,
+            'pivot_ids': list(set(all_pivot_ids)),
+            'query_type': 'combined',
+            'status': 'success',
+            'description': f"Combined query based on condition: {condition}",
+            'implementation_notes': f"Combined query using OR logic for: {', '.join(parts)}"
+        }
+    
+    def _get_group_queries(self, group_name: str, pivot_group: List[Dict], 
+                          all_pivot_queries: List[Dict]) -> Tuple[List[str], List[Dict], List[str]]:
+        """
+        Get queries for a specific pivot group.
+        
+        Args:
+            group_name (str): Name of the pivot group
+            pivot_group (List[Dict]): The pivot group definition
+            all_pivot_queries (List[Dict]): All individual pivot queries
+            
+        Returns:
+            Tuple[List[str], List[Dict], List[str]]: successful queries, failed queries, pivot IDs
+        """
+        group_queries = []
+        group_failed = []
+        group_pivot_ids = []
+        
+        for pivot_dict in pivot_group:
+            # Extract pivot ID and spec
+            pivot_id = None
+            pivot_spec = {}
+            
+            for key, value in pivot_dict.items():
+                if value is None and key.startswith('P'):
+                    pivot_id = key
+                elif key in ['value', 'implementation']:
+                    pivot_spec[key] = value
+            
+            if not pivot_id:
+                continue
+                
+            # Find matching query
+            matching_query = None
+            for pq in all_pivot_queries:
+                if (pq['pivot_id'] == pivot_id and 
+                    str(pq['value']) == str(pivot_spec.get('value', ''))):
+                    matching_query = pq
+                    break
+            
+            if matching_query:
+                group_pivot_ids.append(pivot_id)
+                if matching_query['status'] == 'success':
+                    group_queries.append(matching_query['query'])
+                else:
+                    group_failed.append({
+                        'pivot_id': pivot_id,
+                        'value': matching_query['value'],
+                        'error_message': matching_query.get('error_message', 'Unknown error'),
+                        'implementation_notes': matching_query.get('implementation_notes', '')
+                    })
+        
+        return group_queries, group_failed, group_pivot_ids
+    
+    def _build_final_results(self, rules: Dict[str, Any], queries: List[Dict], 
+                           failed_queries: List[Dict], warnings: List[str], 
+                           pivot_ids_used: List[str], all_pivot_queries: List[Dict]) -> Dict[str, Any]:
+        """
+        Build the final results dictionary.
+        
+        Args:
+            rules (Dict): The rules dictionary
+            queries (List[Dict]): Successful queries
+            failed_queries (List[Dict]): Failed queries
+            warnings (List[str]): Warnings list
+            pivot_ids_used (List[str]): Pivot IDs used
+            all_pivot_queries (List[Dict]): All pivot queries
+            
+        Returns:
+            Dict[str, Any]: Final results structure
+        """
         # Remove duplicates from pivot_ids_used and sort numerically
         pivot_ids_used = list(set(pivot_ids_used))
         # Sort pivot IDs numerically by extracting the numeric parts
@@ -556,7 +836,14 @@ def main():
     
     # Format output data based on requested format
     if args.format == 'json':
-        output_data = json.dumps(results, indent=2, ensure_ascii=False)
+        def json_serializer(obj):
+            """JSON serializer for objects not serializable by default json code"""
+            import datetime
+            if isinstance(obj, datetime.date):
+                return obj.isoformat()
+            raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+        
+        output_data = json.dumps(results, indent=2, ensure_ascii=False, default=json_serializer)
     elif args.format == 'yaml':
         # Create a custom YAML dumper that quotes IP addresses
         class IPQuotingDumper(yaml.SafeDumper):

@@ -95,29 +95,46 @@ condition: ads_php or 1 of ads_panel_hash-*
 The URLScan.io plugin (`plugins/urlscan/`) converts hIGMA rules into URLScan.io search queries. It provides:
 
 - **Query Generation**: Converts DTF pivots into URLScan.io syntax
+- **Condition Support**: Handles logical AND/OR conditions to combine pivots into single queries
 - **Validation**: Validates pivots against supported types and configurations
 - **Comprehensive Output**: Structured YAML with metadata, queries, and validation results
 
 #### Supported Pivots
+- **P0201**: IP Address → `{value}` (for reverse lookup)
 - **P0203**: Network ASN → `page.asn:AS{value}`
 - **P0401.001**: Page Title → `page.title:"{value}"`
 - **P0401.004**: File Hash → `hash:{value}` (SHA256 only)
 - **P0401.006**: Resource Name → `task.url:"{value}"`
 - **P0401.007**: HTTP Status → `page.status:{value}`
 
+#### Condition Processing
+The plugin supports logical conditions to combine pivot groups:
+
+- **AND conditions**: Combines hash values within URLScan hash syntax
+  ```yaml
+  condition: chrome_logo_png and chrome_logo_svg
+  # Generates: hash:(hash1 AND hash2)
+  ```
+
+- **OR conditions**: Combines full query expressions with OR operator
+  ```yaml
+  condition: verification_ip or verification_title
+  # Generates: 185.117.91.141 OR page.title:"Verification Gateway"
+  ```
+
 #### Example Output
 ```yaml
 metadata:
-  rules_title: LandUpdate808 Backend C2 Pivot
-  threat_actor: LandUpdate808
-  total_queries: 2
-  failed_queries: 1
+  rules_title: Chromusimus Fake Updates Pivot via Image Hashes
+  threat_actor: UNK
+  total_queries: 1
+  failed_queries: 0
 
 queries:
-- query_id: ads_php
-  query: task.url:"ads.php" AND page.status:200 AND page.asn:AS399629
+- query_id: condition_chrome_logo_png_and_chrome_logo_svg
+  query: hash:(2bb1a2c9b9ae4d36f62ea53811554636cf3c5b74d9845e1dbacca0ce62dc7880 AND 46c86deeb625c7616a77777ca7ee7bea12493b9611923c66405796f3dcce3185)
   query_type: combined
-  pivot_ids: [P0401.006, P0401.007, P0203]
+  pivot_ids: [P0401.004]
 ```
 
 #### Usage

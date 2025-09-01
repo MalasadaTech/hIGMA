@@ -5,8 +5,9 @@ This integration converts hIGMA YAML rule files into URLScan.io search queries. 
 
 ## Features
 - **Query Generation**: Converts hIGMA pivots into URLScan.io search syntax
+- **Condition Support**: Handles logical AND/OR conditions to combine pivot groups into single queries
 - **Validation**: Validates pivots against configuration and reports failures
-- **Query Combination**: Combines multiple pivots within rule groups using AND logic
+- **Query Combination**: Combines multiple pivots within rule groups using AND logic (legacy behavior)
 - **Comprehensive Output**: Includes metadata, descriptions, implementation notes, and statistics
 - **Error Handling**: Graceful handling of unsupported pivot types with detailed error reporting
 
@@ -27,6 +28,69 @@ This integration converts hIGMA YAML rule files into URLScan.io search queries. 
 - **Input**: Valid IPv4 address (e.g., "185.117.91.141")
 - **Use Case**: Identify shared hosting infrastructure or C2 servers
 
+## Condition Processing
+
+The URLScan integration supports logical conditions from hIGMA rules to combine pivot groups into single, optimized queries:
+
+### AND Conditions
+When pivot groups are combined with `and`, the integration creates optimized URLScan queries:
+
+**Hash-based AND queries** (P0401.004):
+```yaml
+condition: chrome_logo_png and chrome_logo_svg
+# Generates: hash:(hash1 AND hash2)
+```
+
+**Mixed pivot AND queries**:
+```yaml
+condition: group1 and group2
+# Generates: query1 AND query2
+```
+
+### OR Conditions
+When pivot groups are combined with `or`, the integration preserves full query syntax:
+
+```yaml
+condition: verification_ip or verification_title
+# Generates: 185.117.91.141 OR page.title:"Verification Gateway"
+```
+
+### Example: AND Condition
+```yaml
+pivots:
+  chrome_logo_png:
+    - P0401.004:
+      value: "2bb1a2c9b9ae4d36f62ea53811554636cf3c5b74d9845e1dbacca0ce62dc7880"
+      implementation: SHA256
+  chrome_logo_svg:
+    - P0401.004:
+      value: "46c86deeb625c7616a77777ca7ee7bea12493b9611923c66405796f3dcce3185"
+      implementation: SHA256
+condition: chrome_logo_png and chrome_logo_svg
+```
+
+**Generated Query**:
+```
+hash:(2bb1a2c9b9ae4d36f62ea53811554636cf3c5b74d9845e1dbacca0ce62dc7880 AND 46c86deeb625c7616a77777ca7ee7bea12493b9611923c66405796f3dcce3185)
+```
+
+### Example: OR Condition
+```yaml
+pivots:
+  verification_ip:
+    - P0201:
+      value: "185.117.91.141"
+  verification_title:
+    - P0401.001:
+      value: "Verification Gateway"
+condition: verification_ip or verification_title
+```
+
+**Generated Query**:
+```
+185.117.91.141 OR page.title:"Verification Gateway"
+```
+
 ## Output Format
 The integration outputs structured YAML files with the following sections:
 
@@ -46,18 +110,18 @@ metadata:
 ### Queries
 ```yaml
 queries:
-- query_id: verification_ip
-  query: "185.117.91.141"
-  query_type: ip
-  pivot_ids: [P0201]
-  description: Search for domains hosted on specific IP address
-  implementation_notes: IP address mapped to URLScan IP field for reverse lookup
-- query_id: ads_php
-  query: task.url:"ads.php" AND page.status:200 AND page.asn:AS399629
+- query_id: condition_verification_ip_or_verification_title
+  query: 185.117.91.141 OR page.title:"Verification Gateway"
   query_type: combined
-  pivot_ids: [P0401.006, P0401.007, P0203]
-  description: Combined search for multiple pivots
-  implementation_notes: Details about URLScan field mappings
+  pivot_ids: [P0201, P0401.001]
+  description: Combined query based on condition: verification_ip or verification_title
+  implementation_notes: Combined query using OR logic for: verification_ip, verification_title
+- query_id: condition_chrome_logo_png_and_chrome_logo_svg
+  query: hash:(2bb1a2c9b9ae4d36f62ea53811554636cf3c5b74d9845e1dbacca0ce62dc7880 AND 46c86deeb625c7616a77777ca7ee7bea12493b9611923c66405796f3dcce3185)
+  query_type: combined
+  pivot_ids: [P0401.004]
+  description: Combined query based on condition: chrome_logo_png and chrome_logo_svg
+  implementation_notes: Combined query using AND logic for: chrome_logo_png, chrome_logo_svg
 ```
 
 ### Failed Queries & Validation
@@ -78,9 +142,16 @@ warnings:
 python urlscan-integration.py rules/landupdate808-backend-c2-pivot.yaml
 ```
 
-### IP Address Reverse Lookup (P0201)
+### AND Condition Example
+```bash
+python urlscan-integration.py rules/chromusimus-fake-update.yaml
+# Generates: hash:(hash1 AND hash2)
+```
+
+### OR Condition Example
 ```bash
 python urlscan-integration.py rules/clickfix-verification-script-inject.yaml
+# Generates: 185.117.91.141 OR page.title:"Verification Gateway"
 ```
 
 ### With Debug Output
