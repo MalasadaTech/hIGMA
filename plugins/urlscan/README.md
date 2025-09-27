@@ -5,7 +5,7 @@ This integration converts hIGMA YAML rule files into URLScan.io search queries. 
 
 ## Features
 - **Query Generation**: Converts hIGMA pivots into URLScan.io search syntax
-- **Condition Support**: Handles logical AND/OR conditions to combine pivot groups into single queries
+- **Condition Support**: Handles logical AND/OR/NOT conditions to combine pivot groups into single queries
 - **Validation**: Validates pivots against configuration and reports failures
 - **Query Combination**: Combines multiple pivots within rule groups using AND logic (legacy behavior)
 - **Comprehensive Output**: Includes metadata, descriptions, implementation notes, and statistics
@@ -14,7 +14,8 @@ This integration converts hIGMA YAML rule files into URLScan.io search queries. 
 ## Supported Pivots
 | Pivot ID | URLScan Mapping | Input Type | Supported Hash Types |
 |----------|-----------------|------------|---------------------|
-| P0201 | `"IP_ADDRESS"` | string (IP address) | N/A |
+| P0102 | `page.domain:{value}` | string (domain name) | N/A |
+| P0201 | `{value}` | string (IP address) | N/A |
 | P0203 | `page.asn:AS{value}` | string (ASN number) | N/A |
 | P0401.001 | `page.title:"{value}"` | string (page title) | N/A |
 | P0401.004 | `hash:{value}` | string (hash) | SHA256 only |
@@ -27,6 +28,11 @@ This integration converts hIGMA YAML rule files into URLScan.io search queries. 
 - **Purpose**: Find domains hosted on a specific IP address
 - **Input**: Valid IPv4 address (e.g., "185.117.91.141")
 - **Use Case**: Identify shared hosting infrastructure or C2 servers
+
+#### P0102 - Domain Name Analysis
+- **Purpose**: Find resources associated with a specific domain
+- **Input**: Valid domain name (e.g., "example.com", "sub.example.com")
+- **Use Case**: Identify domain-specific infrastructure or exclude legitimate domains from searches
 
 ## Condition Processing
 
@@ -53,6 +59,14 @@ When pivot groups are combined with `or`, the integration preserves full query s
 ```yaml
 condition: verification_ip or verification_title
 # Generates: 185.117.91.141 OR page.title:"Verification Gateway"
+```
+
+### NOT Conditions
+When pivot groups are combined with `not`, the integration uses URLScan's NOT operator for exclusion:
+
+```yaml
+condition: page_title and not legit_page_domain
+# Generates: page.title:"Title" AND NOT page.domain:example.com
 ```
 
 ### Example: AND Condition
@@ -91,6 +105,23 @@ condition: verification_ip or verification_title
 185.117.91.141 OR page.title:"Verification Gateway"
 ```
 
+### Example: NOT Condition with Domain Exclusion
+```yaml
+pivots:
+  page_title:
+    - P0401.001:
+      value: "Download Microsoft Teams Desktop and Mobile Apps | Microsoft Teams"
+  legit_page_domain:
+    - P0102:
+      value: "www.microsoft.com"
+condition: page_title and not legit_page_domain
+```
+
+**Generated Query**:
+```
+page.title:"Download Microsoft Teams Desktop and Mobile Apps | Microsoft Teams" AND NOT page.domain:www.microsoft.com
+```
+
 ## Output Format
 The integration outputs structured YAML files with the following sections:
 
@@ -104,7 +135,7 @@ metadata:
     - https://malasada.tech/landupdate808-backend-c2-analysis/
   total_queries: 2
   failed_queries: 1
-  pivot_ids: [P0201, P0203, P0401.004, P0401.006, P0401.007]
+  pivot_ids: [P0102, P0201, P0203, P0401.004, P0401.006, P0401.007]
 ```
 
 ### Queries
@@ -152,6 +183,12 @@ python urlscan-integration.py rules/chromusimus-fake-update.yaml
 ```bash
 python urlscan-integration.py rules/clickfix-verification-script-inject.yaml
 # Generates: 185.117.91.141 OR page.title:"Verification Gateway"
+```
+
+### NOT Condition Example
+```bash
+python urlscan-integration.py rules/fake-msteams-to-deliver-oyster.yaml
+# Generates: page.title:"Download Microsoft Teams..." AND NOT page.domain:www.microsoft.com
 ```
 
 ### With Debug Output

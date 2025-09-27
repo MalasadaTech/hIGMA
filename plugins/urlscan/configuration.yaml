@@ -19,6 +19,15 @@ metadata:
   date: "2025-08-16"
 
 supported-pivots:
+  - id: "P0102"
+    name: "Domain Name Analysis"
+    description: "Analysts pivot from a known malicious domain to identify additional adversary infrastructure by finding resources associated with a specific domain."
+    input_type: "string"
+    reference: "https://github.com/MalasadaTech/defenders-threatmesh-framework/blob/main/pivots/P0102.md"
+    conditions:
+      - "value must be a valid domain name"
+      - "value type must match input_type"
+
   - id: "P0201"
     name: "Reverse lookup"
     description: "Analysts pivot from a known malicious domain to identify additional adversary infrastructure by finding domains that share the same IP address, indicating shared hosting or infrastructure."

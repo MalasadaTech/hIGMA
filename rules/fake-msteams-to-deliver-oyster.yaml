@@ -1,0 +1,26 @@
+title: MS Teams Installer Masq Pivot via Page Title
+id: 5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b
+author: MalasadaTech
+date: 2025-09-27
+threat_actor: UNK
+description: Identifies MS Teams Installer Masq sites that deliver Oyster Malware by pivoting on the page title. This pivot uses the title "Download Microsoft Teams Desktop and Mobile Apps | Microsoft Teams" to find similar infrastructure.
+dtf_version: 1.0
+references:
+  - https://x.com/roo7cause/status/1971453273862176887
+tags:
+  - phishing
+  - masq
+  - teams
+  - oyster
+confidence: medium
+falsepositives:
+  - Legitimate Microsoft sites using the same page title.
+status: experimental
+pivots:
+  page_title:
+    - P0401.001:
+      value: "Download Microsoft Teams Desktop and Mobile Apps | Microsoft Teams"
+  legit_page_domain:
+    - P0102:
+      value: "www.microsoft.com"
+condition: page_title and not legit_page_domain
