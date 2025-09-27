@@ -34,6 +34,7 @@ Dat    # Initialize query builder and process rules
 Version: 1.0
 
 Supported Pivots:
+- P0102: Domain Name Analysis
 - P0201: Reverse lookup (IP address)
 - P0203: Network ASN pivots
 - P0401.001: HTTP page title analysis
@@ -153,6 +154,24 @@ class URLScanQueryBuilder:
         """
         return f"page.status:{response_code}"
     
+    def build_domain_query(self, domain_value: str) -> str:
+        """
+        Build URLScan query for domain pivot (P0102).
+        
+        Args:
+            domain_value (str): Domain name
+            
+        Returns:
+            str: URLScan query string
+        """
+        # Validate that it looks like a domain (basic regex: no IPs, allows subdomains)
+        import re
+        domain_pattern = r'^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'
+        if not re.match(domain_pattern, domain_value):
+            raise PivotValidationError(f"Invalid domain format: {domain_value}. Must be a valid domain name (e.g., example.com).")
+        
+        return f"page.domain:{domain_value}"
+    
     def build_title_query(self, title: str) -> str:
         """
         Build URLScan query for page title pivot (P0401.001).
@@ -217,6 +236,9 @@ class URLScanQueryBuilder:
             elif pivot_id == "P0401.007":
                 query = self.build_response_code_query(int(pivot_data['value']))
                 query_type = "status"
+            elif pivot_id == "P0102":
+                query = self.build_domain_query(str(pivot_data['value']))
+                query_type = "domain"
             else:
                 raise PivotValidationError(f"Unsupported pivot: {pivot_id}")
             
@@ -253,7 +275,8 @@ class URLScanQueryBuilder:
             "P0401.001": "title",
             "P0401.004": "hash", 
             "P0401.006": "url",
-            "P0401.007": "status"
+            "P0401.007": "status",
+            "P0102": "domain"
         }
         return query_type_map.get(pivot_id, "unknown")
     
@@ -275,6 +298,8 @@ class URLScanQueryBuilder:
             return "Resource name mapped to URLScan task.url field"
         elif pivot_id == "P0401.007":
             return "HTTP status code mapped to URLScan page.status field"
+        elif pivot_id == "P0102":
+            return "Domain name mapped to URLScan page.domain field"
         return "Standard mapping"
     
     def process_rules(self, rules: Dict[str, Any]) -> Dict[str, Any]:
@@ -444,11 +469,23 @@ class URLScanQueryBuilder:
         """
         # Check for 'and' or 'or' conditions between named pivot groups
         if ' and ' in condition.lower() or ' or ' in condition.lower():
-            # Check if the condition references pivot group names that exist
+            # Extract group names from condition, handling 'not' operator
+            import re
+            # Split on ' and ' or ' or ' and clean up
+            parts = re.split(r'\s+(?:and|or)\s+', condition, flags=re.IGNORECASE)
+            group_names = []
+            for part in parts:
+                part = part.strip()
+                if part.startswith('not '):
+                    part = part[4:].strip()
+                group_names.append(part)
+            
+            # Check if all referenced groups exist
             pivot_group_names = list(pivots_section.keys())
-            for group_name in pivot_group_names:
-                if group_name in condition:
-                    return True
+            for group_name in group_names:
+                if group_name not in pivot_group_names:
+                    return False
+            return True
         return False
     
     def _build_condition_based_query(self, condition: str, pivots_section: Dict[str, Any], 
@@ -499,7 +536,14 @@ class URLScanQueryBuilder:
         failed_groups = []
         all_pivot_ids = []
         
-        for group_name in parts:
+        for part in parts:
+            # Handle 'not' operator
+            negate = False
+            group_name = part
+            if part.startswith('not '):
+                negate = True
+                group_name = part[4:].strip()  # Remove 'not ' prefix
+            
             if group_name not in pivots_section:
                 self.logger.warning(f"Pivot group '{group_name}' referenced in condition not found in pivots section")
                 continue
@@ -510,6 +554,10 @@ class URLScanQueryBuilder:
             )
             
             if group_queries:
+                # Apply negation if needed
+                if negate:
+                    group_queries = [f"NOT {query}" for query in group_queries]
+                
                 # For hash queries, we want to combine the hash values, not the full queries
                 if all(query.startswith('hash:') for query in group_queries):
                     # Extract hash values and combine them
@@ -747,6 +795,8 @@ class URLScanQueryBuilder:
                 return f"Search for specific URL/resource name (from {pivot_group_name})"
             elif pivot_id == "P0401.007":
                 return f"Search for specific HTTP status code (from {pivot_group_name})"
+            elif pivot_id == "P0102":
+                return f"Search for specific domain name (from {pivot_group_name})"
         
         return f"Combined search for {pivot_group_name}: {base_description[:100]}..." if base_description else f"Combined search using pivots: {', '.join(pivot_ids)}"
     
