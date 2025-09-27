@@ -1,0 +1,31 @@
+title: MS Teams Installer Masq Delivery Sites Pivot
+id: 7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d
+author: MalasadaTech
+date: 2025-09-27
+threat_actor: UNK
+description: Identifies MS Teams Installer Masq delivery sites (apiUrls) that deliver Oyster Malware by pivoting on the page title. This pivot uses domain registration and hosting info to find the delivery domains.
+dtf_version: 1.0
+references:
+  - https://x.com/roo7cause/status/1971453273862176887
+tags:
+  - phishing
+  - masq
+  - teams
+  - oyster
+confidence: medium
+falsepositives:
+  - Legitimate domains matching the registration and hosting criteria.
+status: experimental
+pivots:
+  delivery_domains:
+    - P0102.002:
+      value: "teams-*"
+    - P0101.011:
+      value: "*.ns.cloudflare.com"
+    - P0101.002:
+      value: ">2025-09-01"
+    - P0203:
+      value: 13335
+    - P0101.001:
+      value: "PDR*"
+condition: delivery_domains
