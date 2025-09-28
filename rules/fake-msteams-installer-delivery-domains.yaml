@@ -7,6 +7,7 @@ description: Identifies MS Teams Installer Masq delivery sites (apiUrls) that de
 dtf_version: 1.0
 references:
   - https://x.com/roo7cause/status/1971453273862176887
+  - https://malasada.tech/oyster-malware-delivery-via-teams-fake-app/
 tags:
   - phishing
   - masq
